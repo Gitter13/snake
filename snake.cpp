@@ -5,12 +5,15 @@
 using namespace std;
 
 const float obnova_frame = 0.5;
+const float obnova_frame = 0.5;
 const float min_cas_jidla = 1.0f;
 
 const int sirka = 600;
 const int vyska = 600;
 bool death = false;
 int snezeno = 0;
+bool hrajeme_dva = false;
+int kdo_vyhral = 0;
 bool hrajeme_dva = false;
 int kdo_vyhral = 0;
 
@@ -21,18 +24,23 @@ class Parts {
 public:
     Vector2 position;
     Color barva;
+    Color barva;
     char smer; // 'U' - up, 'D' - down, 'L' - left, 'R' - right
+    Parts(Vector2 posi, char ismer, Color ibarva){
     Parts(Vector2 posi, char ismer, Color ibarva){
         position = posi;
         smer = ismer;
+        barva = ibarva;
         barva = ibarva;
     }
 
     void draw() {
         DrawRectangle(position.x, position.y, velikost_bloku, velikost_bloku, barva);
+        DrawRectangle(position.x, position.y, velikost_bloku, velikost_bloku, barva);
     }
 };
 vector<Parts> snake;
+vector<Parts> snake_dva;
 vector<Parts> snake_dva;
 
 class Food {
@@ -61,8 +69,16 @@ public:
             snezeno++;
             return true;
         }
+        if (hrajeme_dva &&(position.x == snake_dva[0].position.x && position.y == snake_dva[0].position.y)) {
+            // Add new part to snake
+            Parts newPart = snake_dva.back();
+            snake_dva.push_back(newPart);
+            snezeno++;
+            return true;
+        }
         return false;
     }
+    
     
 };
 
@@ -135,6 +151,10 @@ int main() {
     if (hrajeme_dva) {
         snake_dva.push_back(Parts({sirka - velikost_bloku, vyska - velikost_bloku}, 'L', YELLOW));
     }
+    snake.push_back(Parts({0, 0}, 'R', GREEN));
+    if (hrajeme_dva) {
+        snake_dva.push_back(Parts({sirka - velikost_bloku, vyska - velikost_bloku}, 'L', YELLOW));
+    }
     float cas_od_posledni_obnovy = 0.0f;
 
     while (!WindowShouldClose()) {
@@ -153,6 +173,20 @@ int main() {
             }
             if (IsKeyPressed(KEY_DOWN)) {
                 snake[0].smer = 'D';
+            }
+            if (hrajeme_dva) {
+                if (IsKeyPressed(KEY_A)) {
+                    snake_dva[0].smer = 'L';
+                }
+                if (IsKeyPressed(KEY_D)) {
+                    snake_dva[0].smer = 'R';
+                }
+                if (IsKeyPressed(KEY_W)) {
+                    snake_dva[0].smer = 'U';
+                }
+                if (IsKeyPressed(KEY_S)) {
+                    snake_dva[0].smer = 'D';
+                }
             }
             if (hrajeme_dva) {
                 if (IsKeyPressed(KEY_A)) {
@@ -194,8 +228,28 @@ int main() {
                                 kdo_vyhral = 1;
                             } else if (kdo_vyhral == 2){
                                 kdo_vyhral = 12;
+                Vector2 zkouska_snake = check_collision(snake);
+                Vector2 zkouska_snake_dva;
+                //check collision for two snakes
+                if (hrajeme_dva) {
+                    zkouska_snake_dva = check_collision(snake_dva);
+                    for (int j=0; j<snake.size()-1; j++) {
+                        if(snake[j].position.x == zkouska_snake_dva.x && snake[j].position.y == zkouska_snake_dva.y){
+                            death = true;
+                            if (kdo_vyhral == 0) {
+                                kdo_vyhral = 1;
+                            } else if (kdo_vyhral == 2){
+                                kdo_vyhral = 12;
                             }
                             break;
+                        }
+                    }
+                    if (zkouska_snake.x == zkouska_snake_dva.x && zkouska_snake.y == zkouska_snake_dva.y){
+                        death = true;
+                        kdo_vyhral = 12;
+                    }
+                    for (int j=0; j<snake_dva.size()-1; j++) {
+                        if(snake_dva[j].position.x == zkouska_snake.x && snake_dva[j].position.y == zkouska_snake.y){
                         }
                     }
                     if (zkouska_snake.x == zkouska_snake_dva.x && zkouska_snake.y == zkouska_snake_dva.y){
@@ -210,15 +264,31 @@ int main() {
                             } else if (kdo_vyhral == 1){
                                 kdo_vyhral = 12;
                             }
+                            if (kdo_vyhral == 0) {
+                                kdo_vyhral = 2;
+                            } else if (kdo_vyhral == 1){
+                                kdo_vyhral = 12;
+                            }
                             break;
                         }
                     }
                 }
                 // Move snake parts
+                // Move snake parts
                 if (!death) {
                     for (size_t i = snake.size() - 1; i > 0; --i) {
                         snake[i].position = snake[i - 1].position;
                         snake[i].smer = snake[i - 1].smer;
+                    }
+                    snake[0].position.x = zkouska_snake.x;
+                    snake[0].position.y = zkouska_snake.y;
+                    if (hrajeme_dva) {
+                        for (size_t i = snake_dva.size() - 1; i > 0; --i) {
+                            snake_dva[i].position = snake_dva[i - 1].position;
+                            snake_dva[i].smer = snake_dva[i - 1].smer;
+                        }
+                        snake_dva[0].position.x = zkouska_snake_dva.x;
+                        snake_dva[0].position.y = zkouska_snake_dva.y;
                     }
                     snake[0].position.x = zkouska_snake.x;
                     snake[0].position.y = zkouska_snake.y;
@@ -269,6 +339,36 @@ int main() {
                 death = false;
                 kdo_vyhral = 0;
             }
+            DrawText("Stiskni ENTER pro restart hry.", sirka / 2 - 150, vyska / 2 + 30, 20, LIGHTGRAY);
+            if (kdo_vyhral != 0) {
+                if (kdo_vyhral == 12) {
+                    DrawText("Remiza!", sirka / 2 - 60, vyska / 2 + 30, 30, ORANGE);
+                } else {
+                    if (kdo_vyhral == 1) DrawText("Vyhral zeleny hrac!", sirka / 2 - 100, vyska / 2 + 30, 30, GREEN);
+                    else if (kdo_vyhral == 2) DrawText("Vyhral zluty hrac!", sirka / 2 - 100, vyska / 2 + 30, 30, YELLOW);
+                }
+            }
+            if (hrajeme_dva) {
+                DrawText("HRA PRO DVA.", sirka / 2 - 220, vyska / 2 + 70, 20, LIGHTGRAY);
+            } else {
+                DrawText("Stiskni MEZERNIK pro hru pro dva.", sirka / 2 - 100, vyska / 2 + 70, 20, LIGHTGRAY);
+            }
+            if (IsKeyPressed(KEY_SPACE)){
+                hrajeme_dva = !hrajeme_dva;
+            }
+            if (IsKeyPressed(KEY_ENTER)) {
+                // Reset game
+                snake.clear();
+                snake_dva.clear();
+                snake.push_back(Parts({0, 0}, 'R', GREEN));
+                if (hrajeme_dva) {
+                    snake_dva.push_back(Parts({sirka - velikost_bloku, vyska - velikost_bloku}, 'L', YELLOW));
+                }
+                foods.clear();
+                snezeno = 0;
+                death = false;
+                kdo_vyhral = 0;
+            }
         }
 
         // Draw food
@@ -278,6 +378,11 @@ int main() {
         // Draw snake
         for (auto &part : snake) {
             part.draw();
+        }
+        if (hrajeme_dva) {
+            for (auto &part : snake_dva) {
+                part.draw();
+            }
         }
         if (hrajeme_dva) {
             for (auto &part : snake_dva) {
