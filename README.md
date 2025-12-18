@@ -12,7 +12,7 @@ The game is written in C++ using the [raylib](https://www.raylib.com/) library.
 - **Green snake**: arrow keys ←↑↓→
 - **Yellow snake**: keys wasd
 ###
-When one of the snakes dies, the game ends and on the screen you will see who win and in left up corner the count of apples eaten.<br>
+When one of the snakes dies, the game ends and on the screen you will see who win and in top-left corner the count of apples eaten.<br>
 To play another round just press *enter* and to switch between multiplayer and singleplayer press *space*.
 ## Demo / Screenshots
 Examples of Snake gameplay:
