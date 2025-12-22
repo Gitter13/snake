@@ -5,7 +5,7 @@
 using namespace std;
 
 char theme = 'D'; //D - dark, L - light
-const float obnova_frame = 0.5;
+float obnova_frame = 0.5;
 const float min_cas_jidla = 1.0f;
 
 const int sirka = 600;
@@ -137,7 +137,8 @@ int main() {
         snake_dva.push_back(Parts({sirka - velikost_bloku, vyska - velikost_bloku}, 'L', YELLOW));
     }
     float cas_od_posledni_obnovy = 0.0f;
-
+    float cas_zrychleni = 0;
+    float cas_vychladnuti = 0;
     while (!WindowShouldClose()) {
 
         if (IsKeyPressed(KEY_T)) {
@@ -151,7 +152,21 @@ int main() {
         if (!death){
             float dt = GetFrameTime();
             casovac_jidla -= dt;
+            cas_zrychleni -= dt;
+            cas_vychladnuti -= dt;
+            if (cas_zrychleni < 0.0f) cas_zrychleni = 0.0f;
+            if (cas_vychladnuti < 0.0f) cas_vychladnuti = 0.0f;
+            if (cas_zrychleni == 0.0f && obnova_frame < 0.5f) {
+                obnova_frame = 0.5f;
+            }
             cas_od_posledni_obnovy += dt;
+
+            if (IsKeyPressed(KEY_R) && cas_vychladnuti == 0.0f) {
+                obnova_frame = 0.1f;
+                cas_zrychleni = 0.5f;
+                cas_vychladnuti = 5.0f;
+            }
+
             if (IsKeyPressed(KEY_LEFT)) {
                 snake[0].smer = 'L';
             }
@@ -269,6 +284,7 @@ int main() {
         }else{
             DrawText(("Snezene jidlo: " + to_string(snezeno)).c_str(), 10, 10, 20, textColor);
         }
+        DrawText(("Cooldown pro R: " + to_string(int(cas_vychladnuti)) + " s").c_str(), sirka - 180, vyska - 30, 15, textColor_light);
         if (death) {
             DrawText("Game Over!", sirka / 2 - 280, vyska / 2 - 100, 100, RED);
             DrawText("Stiskni ENTER pro restart hry.", sirka / 2 - 150, vyska / 2 + 30, 20, textColor_light);
